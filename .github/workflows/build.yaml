@@ -1,28 +1,27 @@
-name: Build and Deploy image
+name: Build
 
 on:
   push:
     branches:
-      - "master"
+      - main
+
 
 jobs:
-  deploy:
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
+    
     steps:
-      - name: code checkout
-        uses: actions/checkout@v2
-        
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - uses: actions/checkout@v4
         with:
-          project_id: ${{ secrets.GOOGLE_PROJECT }}
-          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          
-      - name: build and push the docker image
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: sonarsource/sonarqube-scan-action@master
         env:
-          GOOGLE_PROJECT: ${{ secrets.GOOGLE_PROJECT }}
-        run: |
-          gcloud auth configure-docker australia-southeast2-docker.pkg.dev
-          cd front_end_project
-          docker build -t australia-southeast2-docker.pkg.dev/$GOOGLE_PROJECT/chameleon-image-prod/nginx:latest .
-          docker push australia-southeast2-docker.pkg.dev/$GOOGLE_PROJECT/chameleon-image-prod/nginx:latest
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # - uses: sonarsource/sonarqube-quality-gate-action@master
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
